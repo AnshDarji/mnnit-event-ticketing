@@ -6,6 +6,18 @@ Event listings are public. Creating events, booking, viewing tickets, cancelling
 
 The pilot lets each signed-in user select attendee, organizer, gate staff, or admin. Use only synthetic events for this coursework demonstration. Controlled role assignment and verified student profile data are prerequisites for real institute operations. Tickets are free; payment, event approval, waitlists, certificates, and advanced reports are deferred.
 
+## Website pages
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Public landing page and platform overview |
+| `/dashboard` | Event discovery and reservations |
+| `/tickets` | Ticket wallet, QR display/download and cancellation |
+| `/organize` | Event publication and registration/check-in counts |
+| `/check-in` | Camera scanner and manual signed-ticket verification |
+
+The workspace routes preserve institute sign-in in the same browser tab. Ticket and operations pages show a sign-in prompt when unauthenticated. The backend enforces permissions and booking rules.
+
 ## Quick local preview
 
 Requires Python 3.12 or newer and Node.js 22 or newer. Run commands from this repository's root. The preview uses SQLite and synthetic identities for local demonstrations; PostgreSQL remains the required production database.

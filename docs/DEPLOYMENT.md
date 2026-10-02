@@ -24,7 +24,7 @@ The backend verifies Google's signature, issuer, audience and expiry, then requi
 
 Create a Render Blueprint from the repository's `render.yaml`. The file requests four independent free Docker web services and one PostgreSQL 16 database in Singapore. The Docker startup commands apply only the owning service's migrations before launching Uvicorn on Render's assigned port. Render injects the database's internal connection URL; the application normalizes it for the Psycopg driver. [Render Blueprint reference](https://render.com/docs/blueprint-spec)
 
-Fill the prompted `sync: false` variables. Use the actual generated HTTPS URLs from Render; service names alone do not guarantee the final URL. The first deploy may require placeholder URLs until the services are assigned, followed by an environment update and redeploy.
+Fill the prompted `sync: false` credential variables. The blueprint declares this pilot's actual public service URLs. If you deploy a separate copy, replace those URL values with your assigned Render addresses; service names alone do not guarantee the final URL. Never deploy placeholder addresses: event publication and reservations depend on these service connections.
 
 | Variable | Auth | Events | Ticketing | Gateway |
 | --- | --- | --- | --- | --- |

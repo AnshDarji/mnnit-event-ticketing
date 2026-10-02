@@ -49,7 +49,7 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: AUTH_SERVICE_URL
-        sync: false
+        value: https://mnnit-auth.onrender.com
       - key: JWT_SECRET
         sync: false
       - key: QR_SECRET
@@ -77,9 +77,9 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: AUTH_SERVICE_URL
-        sync: false
+        value: https://mnnit-auth.onrender.com
       - key: EVENT_SERVICE_URL
-        sync: false
+        value: https://mnnit-events.onrender.com
       - key: JWT_SECRET
         sync: false
       - key: QR_SECRET
@@ -107,11 +107,11 @@ services:
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: AUTH_SERVICE_URL
-        sync: false
+        value: https://mnnit-auth.onrender.com
       - key: EVENT_SERVICE_URL
-        sync: false
+        value: https://mnnit-events.onrender.com
       - key: TICKETING_SERVICE_URL
-        sync: false
+        value: https://mnnit-ticketing.onrender.com
       - key: JWT_SECRET
         sync: false
       - key: QR_SECRET
