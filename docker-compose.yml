@@ -1,0 +1,121 @@
+name: mnnit-event-ticketing
+
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: infra/Dockerfile.backend
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "python", "-c", "import os, urllib.request; urllib.request.urlopen('http://127.0.0.1:' + os.environ['PORT'] + '/health', timeout=5)"]
+    interval: 15s
+    timeout: 6s
+    retries: 6
+    start_period: 30s
+
+x-environment: &environment
+  DATABASE_URL: postgresql+psycopg://mnnit:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/mnnit
+  JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+  QR_SECRET: ${QR_SECRET:?Set QR_SECRET in .env}
+  INTERNAL_SECRET: ${INTERNAL_SECRET:?Set INTERNAL_SECRET in .env}
+  ENVIRONMENT: development
+  PILOT_ROLE_SELECTION: "true"
+  DEMO_AUTH_ENABLED: ${DEMO_AUTH_ENABLED:-true}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  AUTH_SERVICE_URL: http://auth:8001
+  EVENT_SERVICE_URL: http://events:8002
+  TICKETING_SERVICE_URL: http://ticketing:8003
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mnnit
+      POSTGRES_USER: mnnit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mnnit -d mnnit"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  auth:
+    <<: *backend
+    command: ["sh", "-c", "python -m scripts.migrate --service auth && exec uvicorn backend.auth.main:app --host 0.0.0.0 --port 8001"]
+    environment:
+      <<: *environment
+      PORT: "8001"
+    ports:
+      - "127.0.0.1:8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  events:
+    <<: *backend
+    command: ["sh", "-c", "python -m scripts.migrate --service events && exec uvicorn backend.events.main:app --host 0.0.0.0 --port 8002"]
+    environment:
+      <<: *environment
+      PORT: "8002"
+    ports:
+      - "127.0.0.1:8002:8002"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  ticketing:
+    <<: *backend
+    command: ["sh", "-c", "python -m scripts.migrate --service ticketing && exec uvicorn backend.ticketing.main:app --host 0.0.0.0 --port 8003"]
+    environment:
+      <<: *environment
+      PORT: "8003"
+    ports:
+      - "127.0.0.1:8003:8003"
+    depends_on:
+      db:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+      events:
+        condition: service_healthy
+
+  gateway:
+    <<: *backend
+    command: ["uvicorn", "backend.gateway.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      <<: *environment
+      PORT: "8000"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      auth:
+        condition: service_healthy
+      events:
+        condition: service_healthy
+      ticketing:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        GATEWAY_URL: http://gateway:8000
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-true}
+    restart: unless-stopped
+    environment:
+      GATEWAY_URL: http://gateway:8000
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      NEXT_PUBLIC_DEMO_MODE: ${NEXT_PUBLIC_DEMO_MODE:-true}
+    ports:
+      - "3000:3000"
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -1,0 +1,128 @@
+# Deploy the repository root containing this file. Set every sync:false value
+# in Render; reuse the SAME JWT/QR/internal secrets on all four services.
+# Free services communicate over their public HTTPS URLs, not private hosts.
+services:
+  - type: web
+    name: mnnit-auth
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./infra/Dockerfile.backend
+    dockerContext: .
+    dockerCommand: sh -c 'python -m scripts.migrate --service auth && exec uvicorn backend.auth.main:app --host 0.0.0.0 --port $PORT'
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: {name: mnnit-db, property: connectionString}
+      - key: ENVIRONMENT
+        value: production
+      - key: DEMO_AUTH_ENABLED
+        value: "false"
+      - key: PILOT_ROLE_SELECTION
+        value: "true"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: QR_SECRET
+        sync: false
+      - key: INTERNAL_SECRET
+        sync: false
+  - type: web
+    name: mnnit-events
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./infra/Dockerfile.backend
+    dockerContext: .
+    dockerCommand: sh -c 'python -m scripts.migrate --service events && exec uvicorn backend.events.main:app --host 0.0.0.0 --port $PORT'
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: {name: mnnit-db, property: connectionString}
+      - key: ENVIRONMENT
+        value: production
+      - key: DEMO_AUTH_ENABLED
+        value: "false"
+      - key: PILOT_ROLE_SELECTION
+        value: "true"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: AUTH_SERVICE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: QR_SECRET
+        sync: false
+      - key: INTERNAL_SECRET
+        sync: false
+  - type: web
+    name: mnnit-ticketing
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./infra/Dockerfile.backend
+    dockerContext: .
+    dockerCommand: sh -c 'python -m scripts.migrate --service ticketing && exec uvicorn backend.ticketing.main:app --host 0.0.0.0 --port $PORT'
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: {name: mnnit-db, property: connectionString}
+      - key: ENVIRONMENT
+        value: production
+      - key: DEMO_AUTH_ENABLED
+        value: "false"
+      - key: PILOT_ROLE_SELECTION
+        value: "true"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: AUTH_SERVICE_URL
+        sync: false
+      - key: EVENT_SERVICE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: QR_SECRET
+        sync: false
+      - key: INTERNAL_SECRET
+        sync: false
+  - type: web
+    name: mnnit-gateway
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./infra/Dockerfile.backend
+    dockerContext: .
+    dockerCommand: sh -c 'exec uvicorn backend.gateway.main:app --host 0.0.0.0 --port $PORT'
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: {name: mnnit-db, property: connectionString}
+      - key: ENVIRONMENT
+        value: production
+      - key: DEMO_AUTH_ENABLED
+        value: "false"
+      - key: PILOT_ROLE_SELECTION
+        value: "true"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: AUTH_SERVICE_URL
+        sync: false
+      - key: EVENT_SERVICE_URL
+        sync: false
+      - key: TICKETING_SERVICE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: QR_SECRET
+        sync: false
+      - key: INTERNAL_SECRET
+        sync: false
+
+databases:
+  - name: mnnit-db
+    databaseName: mnnit
+    user: mnnit
+    plan: free
+    region: singapore
+    postgresMajorVersion: "16"

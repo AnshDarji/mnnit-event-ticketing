@@ -1,0 +1,43 @@
+export type Role = "attendee" | "organizer" | "gate_staff" | "admin";
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  department: string | null;
+  program: string | null;
+  batch: string | null;
+  picture?: string | null;
+};
+export type Session = { access_token: string; user: User };
+export type CampusEvent = {
+  id: string;
+  organizer_id: string;
+  organizer_name: string;
+  title: string;
+  description: string;
+  venue: string;
+  capacity: number;
+  starts_at: string;
+  ends_at: string;
+  registration_deadline: string;
+  classification: string;
+  department_rules: string[];
+  program_rules: string[];
+  batch_rules: string[];
+  is_synthetic: boolean;
+  created_at: string;
+};
+export type Ticket = {
+  id: string;
+  event_id: string;
+  event_title: string;
+  venue: string;
+  starts_at: string;
+  status: "active" | "cancelled";
+  checked_in_at: string | null;
+  qr_payload: string;
+  qr_data_url: string;
+};
+export type EventStats = { registrations: number; check_ins: number; capacity: number; remaining: number; attendance_percentage: number };
+export type CheckIn = { message: string; ticket_id: string; attendee_name: string; checked_in_at: string };

@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS auth.users (
+    id VARCHAR(36) PRIMARY KEY,
+    google_sub VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    name VARCHAR(120) NOT NULL,
+    picture TEXT,
+    role VARCHAR(20) NOT NULL DEFAULT 'attendee',
+    department VARCHAR(40) NOT NULL DEFAULT '',
+    program VARCHAR(40) NOT NULL DEFAULT '',
+    batch VARCHAR(4) NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
