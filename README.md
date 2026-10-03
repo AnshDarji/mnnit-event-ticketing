@@ -11,6 +11,7 @@ The pilot lets each signed-in user select attendee, organizer, gate staff, or ad
 | Route | Purpose |
 | --- | --- |
 | `/` | Public landing page and platform overview |
+| `/sign-in` | Dedicated MNNIT Google sign-in page |
 | `/dashboard` | Event discovery and reservations |
 | `/tickets` | Ticket wallet, QR display/download and cancellation |
 | `/organize` | Event publication and registration/check-in counts |

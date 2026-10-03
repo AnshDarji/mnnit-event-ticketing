@@ -1,6 +1,7 @@
 "use client";
+import { LoadingIndicator } from "@/components/loading-indicator";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { LoaderCircle, ShieldCheck, Sparkles } from "lucide-react";
+import { ShieldCheck, Sparkles } from "lucide-react";
 import { post } from "@/lib/api";
 import type { Role, Session } from "@/lib/types";
 import { roleLabel } from "@/lib/format";
@@ -33,7 +34,7 @@ export function GoogleLogin({ onSession }: { onSession: (session: Session) => vo
     const render = () => {
       if (!live || !window.google || !button.current) return;
       window.google.accounts.id.initialize({ client_id: clientId, callback: ({ credential }) => void authenticate(credential), hd: "mnnit.ac.in", auto_select: false });
-      window.google.accounts.id.renderButton(button.current, { theme: "outline", size: "large", shape: "pill", width: 300, text: "signin_with" });
+      window.google.accounts.id.renderButton(button.current, { theme: "outline", size: "large", shape: "rectangular", width: Math.min(300, Math.max(200, button.current.clientWidth)), text: "signin_with" });
     };
     if (window.google) render();
     else {
@@ -59,7 +60,7 @@ export function GoogleLogin({ onSession }: { onSession: (session: Session) => vo
     <div className="login-mark"><ShieldCheck size={32} /></div>
     <h3>Your campus. Your pass.</h3><p>Sign in with your <strong>@mnnit.ac.in</strong> Google account to reserve seats and manage your tickets.</p>
     {clientId ? <div className={pending ? "google-button disabled" : "google-button"} ref={button} /> : <div className="inline-note">Institute sign-in is awaiting Google configuration. The project owner needs to add the Google client ID.</div>}
-    {pending && <p className="muted flex-center"><LoaderCircle className="spin" size={17} />Signing you in…</p>}
+    {pending && <p className="muted flex-center"><LoadingIndicator compact />Signing you in…</p>}
     {error && <p role="alert" className="form-error">{error}</p>}
     {process.env.NEXT_PUBLIC_DEMO_MODE === "true" && <div className="demo-login"><span><Sparkles size={15} /> Local demo access</span><div className="demo-controls"><select aria-label="Demo role" value={demoRole} onChange={event => setDemoRole(event.target.value as Role)}>{roles.map(role => <option key={role} value={role}>{roleLabel(role)}</option>)}</select><button className="button button-secondary" disabled={pending} onClick={demo}>Try demo</button></div><small>Uses synthetic accounts for local evaluation.</small></div>}
     <small className="login-footnote">Coursework pilot · Synthetic events · Free admission</small>

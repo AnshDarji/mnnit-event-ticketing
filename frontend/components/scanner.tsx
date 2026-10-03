@@ -1,11 +1,12 @@
 "use client";
+import { LoadingIndicator } from "@/components/loading-indicator";
 import { useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle2, Keyboard, LoaderCircle, ScanLine, StopCircle } from "lucide-react";
-import { post } from "@/lib/api";
+import { Camera, CheckCircle2, Keyboard, ScanLine, StopCircle } from "lucide-react";
+import { ApiError, post } from "@/lib/api";
 import type { CampusEvent, CheckIn } from "@/lib/types";
 import { date, time } from "@/lib/format";
 
-export function Scanner({ events }: { events: CampusEvent[] }) {
+export function Scanner({ events, onSessionExpired }: { events: CampusEvent[]; onSessionExpired?: (error: ApiError) => void }) {
   const [eventId, setEventId] = useState(events[0]?.id || "");
   const [payload, setPayload] = useState("");
   const [running, setRunning] = useState(false);
@@ -38,7 +39,10 @@ export function Scanner({ events }: { events: CampusEvent[] }) {
     try {
       setResult(await post<CheckIn>("/tickets/check-in", { event_id: latestEventId.current, qr_payload: raw.trim() }));
       setPayload("");
-    } catch (error) { setError(error instanceof Error ? error.message : "The ticket couldn't be checked in."); }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "The ticket couldn't be checked in.");
+      if (error instanceof ApiError && error.status === 401) onSessionExpired?.(error);
+    }
     finally { processing.current = false; setBusy(false); }
   }
   async function start() {
@@ -68,8 +72,8 @@ export function Scanner({ events }: { events: CampusEvent[] }) {
     <label className="field">Event<select value={eventId} onChange={event => { stop(); setEventId(event.target.value); setError(""); setResult(null); }}><option value="">Choose an event</option>{events.map(event => <option key={event.id} value={event.id}>{event.title}</option>)}</select></label>
     {selected && <p className="scanner-event-date">{date(selected.starts_at)} · {time(selected.starts_at)} · {selected.venue}</p>}
     <div className={`camera-frame ${running || starting ? "camera-active" : ""}`}><video ref={video} muted playsInline aria-label="Live camera view for QR scanning" />{!running && !starting && <div className="camera-placeholder"><ScanLine size={54} strokeWidth={1.2} /><p>Ready for your next attendee</p><small>The rear camera works best on a phone</small></div>}<div className="scan-corners" /></div>
-    <button className="button button-primary button-full" disabled={!eventId || busy || starting} onClick={running ? stop : start}>{starting ? <LoaderCircle className="spin" size={18} /> : running ? <StopCircle size={18} /> : <Camera size={18} />}{starting ? "Starting camera…" : running ? "Stop camera" : "Open camera"}</button>
-    {busy && <p className="flex-center muted"><LoaderCircle className="spin" size={18} /> Checking ticket…</p>}
+    <button className="button button-primary button-full" disabled={!eventId || busy || starting} onClick={running ? stop : start}>{starting ? <LoadingIndicator compact /> : running ? <StopCircle size={18} /> : <Camera size={18} />}{starting ? "Starting camera…" : running ? "Stop camera" : "Open camera"}</button>
+    {busy && <p className="flex-center muted"><LoadingIndicator compact /> Checking ticket…</p>}
     {error && <div className="form-error scan-result" role="alert">{error}</div>}
     {result && <div className="success-result" role="status"><CheckCircle2 size={25} /><div><strong>{result.attendee_name || "Attendee"} is checked in</strong><p>{result.message} · {time(result.checked_in_at)}</p></div></div>}
   </section><aside className="scanner-side"><div className="panel"><div className="section-kicker"><Keyboard size={16} /> MANUAL ENTRY</div><h3>Camera unavailable?</h3><p className="muted">Ask the attendee to open their ticket and copy the QR value.</p><form onSubmit={event => { event.preventDefault(); void submit(payload); }}><label className="field">Ticket QR value<textarea rows={4} value={payload} onChange={event => setPayload(event.target.value)} placeholder="Paste the complete signed QR value" autoCapitalize="none" spellCheck={false} /></label><button className="button button-secondary button-full" disabled={busy || !eventId || !payload.trim()} type="submit">{busy ? "Checking…" : "Verify & check in"}</button></form></div><div className="gate-guide"><span className="round-icon"><ShieldIcon /></span><h3>Every entry is verified</h3><p>Only a valid ticket for the selected event can enter. Cancelled tickets and repeat scans are rejected.</p></div></aside></div>;
