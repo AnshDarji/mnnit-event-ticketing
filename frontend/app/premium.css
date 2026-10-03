@@ -166,3 +166,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #b3442c66; outlin
 .landing-page .campus-ledger { width: 100%; max-width: 660px; }
 @media(max-width:650px) { .landing-page .landing-hero { gap: 30px; } }
 @media(prefers-reduced-motion:reduce) { *,*:before,*:after { animation: none!important; transition: none!important; scroll-behavior: auto!important; }.event-card:hover { transform: none; } }
+
+/* Keep the institute emblem legible beside the CampusPass wordmark. */
+.brand-institute-logo { width: 40px; height: 54px; object-fit: contain; flex-shrink: 0; }
+@media (max-width: 650px) { .brand-institute-logo { width: 32px; height: 43px; } }
