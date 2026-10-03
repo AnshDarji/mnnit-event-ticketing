@@ -541,11 +541,13 @@ The completed pilot is the implementation baseline. Deferred features and missin
 
 ## AI assistance and attribution
 
-**Tool:** OpenAI Codex. **Purpose:** frontend/backend implementation assistance, deployment configuration, tests, debugging, UI revisions and documentation. **Generated content:** code, configuration, tests, diagrams and documentation, revised during implementation.
+**Tool:** OpenAI Codex. 
+**Purpose:** frontend/backend implementation assistance, deployment configuration, tests, debugging, UI revisions and documentation. 
+**Generated content:** code, configuration, tests, diagrams and documentation, revised during implementation.
 
 Tool-assisted verification included API tests, PostgreSQL CI, frontend builds/type checking and the recorded live browser walkthrough. This does not establish each student's contribution or personal review. The group must review and understand the submitted code, record its own verification/modifications and confirm individual contributions in the evaluation disclosure. Commit authors alone are not a student contribution declaration.
 
-The MNNIT emblem was supplied by the project owner; the transparent PNG preserves the original artwork. The interface direction was informed by the user-supplied [NYAAY AI reference](https://nyaay-ai-ny.vercel.app/), with an original CampusPass implementation.
+The MNNIT emblem was supplied by the project owner; the transparent PNG preserves the original artwork.
 
 ### References
 
