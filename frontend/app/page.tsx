@@ -7,7 +7,6 @@ import { LandingLedger } from "@/components/landing-ledger";
 
 export default function LandingPage() {
   return <div className="landing-page">
-    <div className="pilot-banner"><span>MNNIT ALLAHABAD</span><span className="banner-dot">/</span><span>Software Engineering coursework pilot · Synthetic events</span></div>
     <header className="site-header"><div className="header-inner"><Brand /><nav className="landing-nav" aria-label="Primary navigation"><a href="#platform">The experience</a><Link href="/dashboard">Events</Link><Link href="/tickets">My tickets</Link></nav><Link className="button button-primary" href="/sign-in">Sign in<ArrowRight size={16} /></Link></div></header>
     <main className="main-container">
       <div className="editorial-masthead"><span className="edition-stamp">CAMPUS LIFE, CONNECTED</span><span>MNNIT / ALLAHABAD <i /> INSTITUTE SIGN-IN</span></div>
