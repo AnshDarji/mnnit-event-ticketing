@@ -156,6 +156,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #b3442c66; outlin
 @media(max-width:650px) { .dashboard-summary>div { grid-template-columns: 24px minmax(85px,max-content) 1fr; } }
 .landing-page .landing-hero { grid-template-columns: minmax(0,1fr); justify-items: center; gap: 40px; }
 .landing-page .landing-copy { width: 100%; max-width: 900px; text-align: center; }
+.institute-logo { display: block; width: 86px; height: auto; margin: 0 auto 22px; mix-blend-mode: multiply; }
+@media(max-width:650px) { .institute-logo { width: 68px; margin-bottom: 18px; } }
 .landing-page .hero-line-break { display: none; }
 .landing-page .landing-hero p { max-width: 600px; margin-inline: auto; }
 .landing-page .landing-actions { justify-content: center; }
