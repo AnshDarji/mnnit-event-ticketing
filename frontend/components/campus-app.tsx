@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TeamFooter } from "@/components/team-footer";
 import { Brand } from "@/components/brand";
 import { LoadingIndicator } from "@/components/loading-indicator";
 import { useRouter } from "next/navigation";
@@ -114,7 +115,7 @@ export default function CampusApp({ tab }: { tab: "discover" | "tickets" | "mana
       {tab === "manage" && user && canManage && <ManageEvents user={user} events={events} onCreate={() => setCreateOpen(true)} onError={handleError} />}
       {tab === "scan" && canScan && <section className="workspace-section"><div className="section-heading"><div><div className="section-kicker"><ScanLine size={16} /> ENTRY OPERATIONS</div><h1>Gate check-in<span className="heading-dot">.</span></h1><p className="muted">Validate tickets and record attendance for the selected event.</p></div><span className="pill"><ShieldCheck size={15} />Authorized gate access</span></div><Scanner onSessionExpired={handleError} key={events.map(event => event.id).join("-")} events={user?.role === "organizer" ? events.filter(event => event.organizer_id === user.id) : events} /></section>}
     </main>
-    <footer className="site-footer"><div><span className="footer-brand"><TicketIcon size={19} />CampusPass</span><p>Event registration and ticket management for MNNIT.</p></div><div><span>CampusPass · Coursework pilot</span><small>Software Engineering Coursework Pilot · MNNIT Allahabad</small></div></footer>
+    <footer className="site-footer"><div className="footer-overview"><div><span className="footer-brand"><TicketIcon size={19} />CampusPass</span><p>Event registration and ticket management for MNNIT.</p></div><div><span>CampusPass · Coursework pilot</span><small>Software Engineering Coursework Pilot · MNNIT Allahabad</small></div></div><TeamFooter /></footer>
     <nav className="mobile-nav" aria-label="Mobile navigation"><Link href="/dashboard" className={tab === "discover" ? "mobile-active" : ""}><CalendarDays size={21} />Dashboard</Link><Link href="/tickets" className={tab === "tickets" ? "mobile-active" : ""}><TicketIcon size={21} />My tickets</Link>{canManage && <Link href="/organize" className={tab === "manage" ? "mobile-active" : ""}><LayoutDashboard size={21} />Organize</Link>}{canScan && <Link href="/check-in" className={tab === "scan" ? "mobile-active" : ""}><ScanLine size={21} />Check-in</Link>}{user && <button onClick={() => setProfileOpen(true)}><GraduationCap size={21} />Profile</button>}</nav>
     {toast && <div className={`toast ${toast.error ? "toast-error" : ""}`} role={toast.error ? "alert" : "status"}>{toast.error ? <InfoIcon /> : <CheckCircle2 size={20} />}<span>{toast.message}</span><button aria-label="Dismiss notification" onClick={() => setToast(null)}><X size={17} /></button></div>}
     {loginOpen && <Modal title="Welcome to CampusPass" onClose={() => setLoginOpen(false)}><GoogleLogin onSession={onSession} /></Modal>}

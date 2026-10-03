@@ -170,3 +170,24 @@ input:focus, select:focus, textarea:focus { outline: 2px solid #b3442c66; outlin
 /* Keep the institute emblem legible beside the CampusPass wordmark. */
 .brand-institute-logo { width: 40px; height: 54px; object-fit: contain; flex-shrink: 0; }
 @media (max-width: 650px) { .brand-institute-logo { width: 32px; height: 43px; } }
+
+
+/* Full-width footer with the same dark blue palette as the header. */
+.site-footer { max-width: none; width: 100%; margin: 0; padding: 0; display: block; background: #161c24; border-top: 1px solid #343a43; color: #fffaf2; }
+.footer-overview { max-width: 1216px; margin: 0 auto; padding: 36px 32px; display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.footer-overview>div:last-child { text-align: right; }
+.site-footer .footer-brand { color: #fffaf2; }
+.site-footer p, .site-footer small { color: #a8afb8; }
+.footer-overview>div:last-child>span { font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: 1px; color: #a8afb8; }
+.team-footer { max-width: 1216px; margin: 0 auto; padding: 32px 32px 42px; border-top: 1px solid #343a43; display: grid; grid-template-columns: 130px 1fr; gap: 28px; text-align: left; }
+.team-footer-heading>span { font-family: var(--font-mono), monospace; font-size: 9px; letter-spacing: 1.6px; color: #a8afb8; }
+.team-footer-heading h2 { font-family: var(--font-display), Georgia, serif; font-size: 30px; font-weight: 500; margin: 8px 0 0; }
+.team-footer-members { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; align-items: center; }
+.team-member-name { display: block; font-size: 13px; font-weight: 500; margin-bottom: 9px; }
+.team-footer-members a { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; font-size: 11px; color: #e27c5b; text-decoration: underline; text-underline-offset: 4px; }
+.team-footer-members a>span { min-width: 0; overflow-wrap: anywhere; }
+.team-footer-members a>svg { flex-shrink: 0; }
+.team-footer-members a:hover { color: #fffaf2; }
+.team-footer-members a:focus-visible { outline: 2px solid #e27c5b; outline-offset: 5px; }
+@media (max-width: 1000px) { .team-footer { grid-template-columns: 1fr; gap: 22px; } }
+@media (max-width: 650px) { .footer-overview { padding: 28px 20px; flex-direction: column; align-items: flex-start; gap: 20px; } .footer-overview>div:last-child { text-align: left; } .team-footer { padding: 26px 20px 34px; } .team-footer-members { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 16px; } .team-member-name { font-size: 12px; } .team-footer-members a { font-size: 10px; } .team-footer-members a>svg { width: 14px; height: 14px; } }
