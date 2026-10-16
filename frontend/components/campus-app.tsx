@@ -40,22 +40,29 @@ export default function CampusApp({ tab }: { tab: "discover" | "tickets" | "mana
   const [busy, setBusy] = useState("");
   const [toast, setToast] = useState<Toast>(null);
 
+  // Handle API errors centrally, including expired authentication sessions.
   const handleError = useCallback((error: unknown) => {
-    if (error instanceof ApiError && error.status === 401) { setUser(null); setTickets([]); setLoginOpen(true);  }
+    if (error instanceof ApiError && error.status === 401) { setUser(null); setTickets([]); setLoginOpen(true); }
     setToast({ message: error instanceof Error ? error.message : "Something went wrong. Try again.", error: true });
   }, []);
+
+  // Fetch the latest event list from the backend.
   const refreshEvents = useCallback(async () => {
     setLoading(true); setEventsError("");
     try { const response = await api<{ items: CampusEvent[] }>("/events"); setEvents(response.items); }
     catch (error) { setEventsError(error instanceof Error ? error.message : "Events couldn't be loaded."); }
     finally { setLoading(false); }
   }, []);
+
+  // Fetch tickets belonging to the currently signed-in user.
   const refreshTickets = useCallback(async () => {
     setTicketsLoading(true); setTicketsError("");
     try { const response = await api<{ items: Ticket[] }>("/tickets/me"); setTickets(response.items); }
     catch (error) { setTicketsError(error instanceof Error ? error.message : "Tickets couldn't be loaded."); handleError(error); }
     finally { setTicketsLoading(false); }
   }, [handleError]);
+
+  // Restore the saved login session when the app starts.
   const restoreSession = useCallback(async () => {
     setAuthReady(false); setAuthError("");
     try { if (token()) setUser(await api<User>("/auth/me")); }
@@ -64,39 +71,59 @@ export default function CampusApp({ tab }: { tab: "discover" | "tickets" | "mana
       else setAuthError(error instanceof Error ? error.message : "Your account could not be loaded. Please retry.");
     } finally { setAuthReady(true); }
   }, []);
+
+  // Load events and restore authentication on mount.
   useEffect(() => { void refreshEvents(); void restoreSession(); }, [refreshEvents, restoreSession]);
+
+  // Refresh tickets whenever the authenticated user changes.
   useEffect(() => { if (user) void refreshTickets(); }, [user?.id, refreshTickets]);
+
+  // Automatically dismiss toast notifications after 6.5 seconds.
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 6500); return () => clearTimeout(timer); }, [toast]);
+
+  // Save the session returned by a successful sign-in.
   const onSession = useCallback((session: Session) => {
-    saveToken(session.access_token); setUser(session.user); setLoginOpen(false); setProfileOpen(false); 
+    saveToken(session.access_token); setUser(session.user); setLoginOpen(false); setProfileOpen(false);
     setToast({ message: `Welcome, ${session.user.name.split(" ")[0]}. You are signed in.` });
   }, []);
+
+  // Build the available category filters and filtered event list.
   const categories = useMemo(() => ["All events", ...Array.from(new Set(events.map(event => event.classification)))], [events]);
   const filteredEvents = useMemo(() => events.filter(event => (category === "All events" || event.classification === category) && `${event.title} ${event.description} ${event.venue}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()), [events, category, search]);
+
   const upcoming = events.filter(event => new Date(event.ends_at) > new Date());
+
+  // Determine which features are allowed for the user's role.
   const canManage = user?.role === "organizer" || user?.role === "admin";
   const canScan = user?.role === "gate_staff" || user?.role === "admin" || user?.role === "organizer";
   const activeTickets = tickets.filter(ticket => ticket.status === "active");
+
   async function book(event: CampusEvent) {
+    // Ask the user to sign in before creating a reservation.
     if (!user) { setSelectedEvent(null); setLoginOpen(true); return; }
     setBookingError(""); setBusy(`book-${event.id}`);
     try {
       const ticket = await post<Ticket>("/tickets/book", { event_id: event.id });
+      // Update local tickets and open the newly created QR ticket.
       setTickets(previous => [ticket, ...previous.filter(item => item.id !== ticket.id)]); setSelectedEvent(null); setSelectedTicket(ticket);
       setToast({ message: "Reservation confirmed. Your QR ticket is ready." });
     } catch (error) { setBookingError(error instanceof Error ? error.message : "Reservation failed. Please try again."); handleError(error); }
     finally { setBusy(""); }
   }
+
   async function cancel(ticket: Ticket) {
     setBusy(`cancel-${ticket.id}`);
     try {
       const cancelled = await post<Ticket>(`/tickets/${ticket.id}/cancel`, {});
+      // Replace the ticket with its updated cancelled state.
       setTickets(previous => previous.map(item => item.id === ticket.id ? cancelled : item)); setSelectedTicket(null); setCancelTarget(null);
       setToast({ message: "Ticket cancelled. Your seat has been released." });
     } catch (error) { handleError(error); }
     finally { setBusy(""); }
   }
-  function logout() { saveToken(null); setUser(null); setTickets([]);  setProfileOpen(false); setToast({ message: "You’ve signed out." }); }
+
+  // Clear the local session and reset user-specific state.
+  function logout() { saveToken(null); setUser(null); setTickets([]); setProfileOpen(false); setToast({ message: "You’ve signed out." }); }
 
   return <>
     <div className="pilot-banner"><ShieldCheck size={14} /><span>Coursework pilot</span><span>· Synthetic events · MNNIT Allahabad</span></div>
@@ -119,7 +146,7 @@ export default function CampusApp({ tab }: { tab: "discover" | "tickets" | "mana
     <nav className="mobile-nav" aria-label="Mobile navigation"><Link href="/dashboard" className={tab === "discover" ? "mobile-active" : ""}><CalendarDays size={21} />Dashboard</Link><Link href="/tickets" className={tab === "tickets" ? "mobile-active" : ""}><TicketIcon size={21} />My tickets</Link>{canManage && <Link href="/organize" className={tab === "manage" ? "mobile-active" : ""}><LayoutDashboard size={21} />Organize</Link>}{canScan && <Link href="/check-in" className={tab === "scan" ? "mobile-active" : ""}><ScanLine size={21} />Check-in</Link>}{user && <button onClick={() => setProfileOpen(true)}><GraduationCap size={21} />Profile</button>}</nav>
     {toast && <div className={`toast ${toast.error ? "toast-error" : ""}`} role={toast.error ? "alert" : "status"}>{toast.error ? <InfoIcon /> : <CheckCircle2 size={20} />}<span>{toast.message}</span><button aria-label="Dismiss notification" onClick={() => setToast(null)}><X size={17} /></button></div>}
     {loginOpen && <Modal title="Welcome to CampusPass" onClose={() => setLoginOpen(false)}><GoogleLogin onSession={onSession} /></Modal>}
-    {profileOpen && user && <Modal title="Your campus profile" onClose={() => setProfileOpen(false)}><ProfileForm user={user} onSave={session => { saveToken(session.access_token); setUser(session.user); setProfileOpen(false);  setToast({ message: "Your profile has been updated." }); }} /><button className="sign-out" onClick={logout}><LogOut size={16} />Sign out</button></Modal>}
+    {profileOpen && user && <Modal title="Your campus profile" onClose={() => setProfileOpen(false)}><ProfileForm user={user} onSave={session => { saveToken(session.access_token); setUser(session.user); setProfileOpen(false); setToast({ message: "Your profile has been updated." }); }} /><button className="sign-out" onClick={logout}><LogOut size={16} />Sign out</button></Modal>}
     {createOpen && <Modal title="Create event" wide onClose={() => setCreateOpen(false)}><CreateEventForm onCreate={event => { setEvents(previous => [event, ...previous]); setCreateOpen(false); setToast({ message: "Event published. Eligible attendees can now reserve seats." }); }} /></Modal>}
     {selectedEvent && <Modal title="Event details" wide onClose={() => setSelectedEvent(null)}><EventDetails event={selectedEvent} user={user} error={bookingError} ticket={activeTickets.find(ticket => ticket.event_id === selectedEvent.id)} busy={busy === `book-${selectedEvent.id}`} onBook={() => book(selectedEvent)} onTicket={ticket => { setSelectedEvent(null); setSelectedTicket(ticket); }} onProfile={() => { setSelectedEvent(null); setProfileOpen(true); }} /></Modal>}
     {cancelTarget && <Modal title="Cancel reservation" onClose={() => setCancelTarget(null)}><p>Cancel your ticket for <strong>{cancelTarget.event_title}</strong>? Your seat will become available to another attendee.</p>{toast?.error && <p className="form-error" role="alert">{toast.message}</p>}<div className="confirm-actions"><button className="button button-secondary" onClick={() => setCancelTarget(null)}>Keep ticket</button><button className="button button-primary" disabled={!!busy} onClick={() => cancel(cancelTarget)}>{busy ? "Cancelling…" : "Confirm cancellation"}</button></div></Modal>}
@@ -130,43 +157,79 @@ export default function CampusApp({ tab }: { tab: "discover" | "tickets" | "mana
 function InfoIcon() { return <ShieldCheck size={20} />; }
 
 function EventArt({ event }: { event: CampusEvent; index?: number }) {
+  // Render a consistent event banner using its category and start date.
   return <div className="event-art event-art-professional" aria-hidden="true"><span className="event-art-class">{event.classification}</span><CalendarDays size={44} strokeWidth={1.2} /><span className="event-art-caption">MNNIT ALLAHABAD · {date(event.starts_at)}</span></div>;
 }
 
 function EventCard({ event, index, onOpen, booked }: { event: CampusEvent; index: number; onOpen: () => void; booked: boolean }) {
+  // Determine whether registration has passed its deadline.
   const closed = new Date(event.registration_deadline) < new Date();
   return <article className="event-card"><button className="event-art-button" onClick={onOpen} aria-label={`View ${event.title}`}><EventArt event={event} index={index} /><span className="art-date"><strong>{new Date(event.starts_at).toLocaleDateString("en-IN", { day: "2-digit", timeZone: "Asia/Kolkata" })}</strong><small>{new Date(event.starts_at).toLocaleDateString("en-IN", { month: "short", timeZone: "Asia/Kolkata" })}</small></span></button><div className="event-card-body"><div className="event-card-top"><span className="classification">{event.classification}</span><span className="free-label">FREE</span></div><button className="event-title-button" onClick={onOpen}><h3>{event.title}</h3></button><p className="event-description">{event.description}</p><div className="event-meta"><span><MapPin size={15} />{event.venue}</span><span><Clock3 size={15} />{time(event.starts_at)} IST</span></div><div className="event-card-bottom"><span>{booked ? <><CheckCircle2 size={15} />You’re on the list</> : closed ? "Registration closed" : <><Users size={15} />{event.capacity} seats</>}</span><button onClick={onOpen}>View event<ArrowRight size={16} /></button></div></div></article>;
 }
 
 function EventDetails({ event, user, ticket, busy, error, onBook, onTicket, onProfile }: { event: CampusEvent; user: User | null; ticket?: Ticket; busy: boolean; onBook: () => void; onTicket: (ticket: Ticket) => void; onProfile: () => void; error?: string }) {
+  // Determine registration status and evaluate the event's eligibility rules.
   const closed = new Date(event.registration_deadline) < new Date();
   const rules: [string, string[], string | null | undefined][] = [["Department", event.department_rules, user?.department], ["Program", event.program_rules, user?.program], ["Admission batch", event.batch_rules, user?.batch]];
   const configuredRules = rules.filter(([, values]) => values.length);
+
+  // A user must match every configured rule to be eligible to book.
   const eligible = rules.every(([, values, actual]) => !values.length || !!actual && values.map(value => value.toUpperCase()).includes(actual.toUpperCase()));
   return <div className="event-detail"><EventArt event={event} /><div className="event-card-top"><span className="classification">{event.classification}</span><span className="free-label">FREE ADMISSION</span></div><h2>{event.title}</h2><p className="detail-description">{event.description}</p><div className="detail-info-grid"><div><CalendarDays size={20} /><span><strong>{fullDate(event.starts_at)}</strong><small>{time(event.starts_at)}–{time(event.ends_at)} IST</small></span></div><div><MapPin size={20} /><span><strong>{event.venue}</strong><small>MNNIT Allahabad</small></span></div><div><Users size={20} /><span><strong>{event.capacity} seats</strong><small>One ticket per attendee</small></span></div><div><Clock3 size={20} /><span><strong>Registration closes {date(event.registration_deadline)}</strong><small>{time(event.registration_deadline)} IST</small></span></div></div><div className="eligibility-box"><h3><ShieldCheck size={17} />Who can attend?</h3>{configuredRules.length ? <>{configuredRules.map(([label, values, actual]) => <p key={label}><strong>{label}</strong><span>{values.join(", ")}</span>{user && <span className={actual && values.map(value => value.toUpperCase()).includes(actual.toUpperCase()) ? "eligible-match" : "eligible-missing"}>{actual && values.map(value => value.toUpperCase()).includes(actual.toUpperCase()) ? "Matches" : "Update profile"}</span>}</p>)}{user && !eligible && <button className="text-button" onClick={onProfile}>Update your academic profile<ChevronRight size={15} /></button>}</> : <p>This event is open to the MNNIT community.</p>}</div><p className="organized-by">Organized by <strong>{event.organizer_name || "MNNIT organizer"}</strong>{event.is_synthetic && <span>· Synthetic pilot event</span>}</p>{error && <p className="form-error reservation-error" role="alert">{error}</p>}{busy && <p className="reservation-progress" role="status">Preparing your ticket. Free hosting may take a moment to start.</p>}{ticket ? <button className="button button-primary button-full" onClick={() => onTicket(ticket)}><QrCode size={18} />View your CampusPass</button> : <button className="button button-primary button-full" disabled={busy || closed || (!!user && !eligible)} onClick={onBook}>{busy ? <LoadingIndicator compact /> : <TicketIcon size={18} />}{busy ? "Reserving your seat…" : closed ? "Registration has closed" : !user ? "Sign in to reserve your seat" : !eligible ? "Check your eligibility to book" : "Reserve my seat · Free"}</button>}</div>;
 }
 
 function TicketDetails({ ticket, onCopyError }: { ticket: Ticket; onCopyError: (error: unknown) => void }) {
   const [copied, setCopied] = useState(false);
-  async function copy() { try { await navigator.clipboard.writeText(ticket.qr_payload); setCopied(true); setTimeout(() => setCopied(false), 2000); } catch { onCopyError(new Error("Copy unavailable. Select the QR value below and copy it manually.")); } }
+
+  // Copy the QR payload so it can be entered manually if needed.
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(ticket.qr_payload);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      onCopyError(new Error("Copy unavailable. Select the QR value below and copy it manually."));
+    }
+  }
+
   return <div className="qr-ticket"><span className={`status-badge ${ticket.checked_in_at ? "status-checked" : "status-active"}`}>{ticket.checked_in_at ? "Checked in" : "Ready for entry"}</span><h3>{ticket.event_title}</h3><p>{fullDate(ticket.starts_at)}<br />{time(ticket.starts_at)} IST · {ticket.venue}</p><div className="qr-image"><img src={ticket.qr_data_url} alt={`Signed QR ticket for ${ticket.event_title}`} width={260} height={260} /></div><strong className="qr-instruction">Present this QR code at the gate.</strong><p className="muted text-small">Show this code at the event gate. Keep your ticket private.</p><div className="qr-actions"><a className="button button-secondary" href={ticket.qr_data_url} download={`CampusPass-${ticket.id.slice(0, 8)}.svg`}><ArrowDownToLine size={16} />Save QR</a><button className="button button-secondary" onClick={copy}>{copied ? <Check size={16} /> : <Copy size={16} />}{copied ? "Copied" : "Copy value"}</button></div><details className="qr-value"><summary>Show QR value for manual entry</summary><textarea readOnly value={ticket.qr_payload} aria-label="Signed QR value" rows={3} onFocus={event => event.target.select()} /><small>Ticket #{ticket.id.slice(0, 8).toUpperCase()}</small></details></div>;
 }
 
 function ManageEvents({ user, events, onCreate, onError }: { user: User; events: CampusEvent[]; onCreate: () => void; onError: (error: unknown) => void }) {
+  // Admins can manage all events; organizers can manage only their own.
   const mine = useMemo(() => events.filter(event => user.role === "admin" || event.organizer_id === user.id), [events, user.id, user.role]);
   const [stats, setStats] = useState<Record<string, EventStats>>({});
   const [pending, setPending] = useState(false);
   const [statsError, setStatsError] = useState("");
+
   const refresh = useCallback(async () => {
     setPending(true); setStatsError("");
+
+    // Fetch each event's statistics concurrently; one failed request won't
+    // prevent successful responses for the other events from being collected.
     const responses = await Promise.allSettled(mine.map(async event => [event.id, await api<EventStats>(`/tickets/events/${event.id}/stats`)] as const));
     const next: Record<string, EventStats> = {};
-    responses.forEach(response => { if (response.status === "fulfilled") next[response.value[0]] = response.value[1]; else { setStatsError(response.reason instanceof Error ? response.reason.message : "Some event counts are unavailable."); if (response.reason instanceof ApiError && response.reason.status === 401) onError(response.reason); } });
+    responses.forEach(response => {
+      if (response.status === "fulfilled") next[response.value[0]] = response.value[1];
+      else {
+        setStatsError(response.reason instanceof Error ? response.reason.message : "Some event counts are unavailable.");
+        if (response.reason instanceof ApiError && response.reason.status === 401) onError(response.reason);
+      }
+    });
     setStats(next); setPending(false);
   }, [mine, onError]);
+
+  // Refresh counts whenever the list of managed events changes.
   useEffect(() => { void refresh(); }, [refresh]);
+
+  // Calculate combined registration and attendance totals.
   const totalRegistrations = Object.values(stats).reduce((sum, item) => sum + item.registrations, 0);
   const totalCheckIns = Object.values(stats).reduce((sum, item) => sum + item.check_ins, 0);
+
   return <section className="workspace-section"><div className="section-heading"><div><div className="section-kicker"><LayoutDashboard size={16} /> EVENT MANAGEMENT</div><h1>Organizer dashboard<span className="heading-dot">.</span></h1><p className="muted">Publish events and monitor registrations and attendance.</p></div><button className="button button-primary" onClick={onCreate}><Plus size={18} />Create event</button></div><div className="stats-grid"><StatCard label={user.role === "admin" ? "Pilot events" : "Your events"} value={mine.length} icon={<CalendarDays size={23} />} /><StatCard label="Registrations" value={pending ? "…" : totalRegistrations} icon={<TicketIcon size={23} />} /><StatCard label="Checked in" value={pending ? "…" : totalCheckIns} icon={<ScanLine size={23} />} /><StatCard label="Attendance" value={pending ? "…" : `${totalRegistrations ? Math.round(totalCheckIns / totalRegistrations * 100) : 0}%`} icon={<Users size={23} />} /></div><div className="manage-list-head"><h2>{user.role === "admin" ? "All pilot events" : "Your events"}</h2><button className="text-button" onClick={refresh} disabled={pending}><RefreshCw size={15} className={pending ? "spin" : ""} />Refresh counts</button></div>{statsError && <p className="form-error" role="alert">{statsError}</p>}{mine.length ? <div className="manage-events">{mine.map(event => <article className="manage-event" key={event.id}><div className="manage-event-icon"><CalendarDays size={25} /></div><div className="manage-event-info"><span className="classification">{event.classification}</span><h3>{event.title}</h3><p>{date(event.starts_at)} · {time(event.starts_at)} IST · {event.venue}</p></div><div className="manage-event-numbers"><span><strong>{stats[event.id]?.registrations ?? "—"}<small> / {event.capacity}</small></strong>Registered</span><span><strong>{stats[event.id]?.check_ins ?? "—"}</strong>Checked in</span><span><strong>{stats[event.id]?.remaining ?? "—"}</strong>Seats left</span></div><div className="capacity-bar" aria-label={`${stats[event.id]?.registrations ?? 0} of ${event.capacity} seats booked`}><i style={{ width: `${Math.min(100, ((stats[event.id]?.registrations || 0) / event.capacity) * 100)}%` }} /></div></article>)}</div> : <div className="empty-state"><Sparkles size={40} /><h3>Create your first event</h3><p>Publish your first free event. Reservations and attendance will appear here.</p><button className="button button-primary" onClick={onCreate}><Plus size={17} />Create your first event</button></div>}</section>;
 }
-function StatCard({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) { return <div className="stat-card"><span className="stat-icon">{icon}</span><strong>{value}</strong><span>{label}</span></div>; }
+
+function StatCard({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) {
+  // Reusable summary card for organizer dashboard statistics.
+  return <div className="stat-card"><span className="stat-icon">{icon}</span><strong>{value}</strong><span>{label}</span></div>;
+}
