@@ -1,7 +1,5 @@
 from datetime import timedelta
-
 import pytest
-
 from backend.common.models import utcnow
 
 
