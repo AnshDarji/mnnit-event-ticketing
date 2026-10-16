@@ -1,4 +1,6 @@
+
 """Seed synthetic events. Re-running does not overwrite existing event records."""
+
 from datetime import timedelta
 from uuid import NAMESPACE_URL, uuid5
 
@@ -8,6 +10,9 @@ from backend.common.db import get_engine
 from backend.common.models import Event, utcnow
 from scripts.migrate import migrate
 
+
+# Define the synthetic events to be inserted into the database.
+# Each tuple contains event details, eligibility rules, and start-day offset.
 EVENTS = [
     ("Build Night: ideas into prototypes", "Bring an idea, meet a team, and build something useful in an evening. A hands-on campus session with short demos and peer feedback. This is a synthetic coursework event.", "Innovation Hub · CSED", "Club / Society", 80, [], [], 1),
     ("The AI & robotics lab", "Explore computer vision and intelligent machines through live demonstrations and a practical beginner workshop. No prior robotics experience needed. Synthetic pilot event.", "Computer Centre Auditorium", "Institute-level", 120, [], [], 2),
@@ -19,19 +24,59 @@ EVENTS = [
 
 
 def main():
+    # Apply the required database migrations before seeding events.
     migrate("events")
+
+    # Open a database session to check for and insert missing events.
     with Session(get_engine()) as db:
         created = 0
+
+        # Process each event definition from the seed data.
         for title, description, venue, classification, capacity, departments, programs, days in EVENTS:
+            # Generate a deterministic ID so repeated runs identify the same event.
             identifier = str(uuid5(NAMESPACE_URL, "mnnit-pilot/" + title))
+
+            # Skip events that already exist to avoid overwriting existing records.
             if db.get(Event, identifier):
                 continue
-            starts = (utcnow() + timedelta(days=days)).replace(hour=12, minute=30, second=0, microsecond=0)
-            db.add(Event(id=identifier, title=title, description=description, venue=venue, capacity=capacity, starts_at=starts, ends_at=starts + timedelta(hours=3), registration_deadline=starts - timedelta(hours=1), classification=classification, department_rules=departments, program_rules=programs, batch_rules=[], organizer_id="00000000-0000-0000-0000-000000000000", organizer_name="Campus Collective · Pilot", is_synthetic=True))
+
+            # Schedule the event at 12:30 UTC after the specified number of days.
+            starts = (utcnow() + timedelta(days=days)).replace(
+                hour=12, minute=30, second=0, microsecond=0
+            )
+
+            # Create a new synthetic event with its schedule, capacity,
+            # eligibility rules, and organizer details.
+            db.add(
+                Event(
+                    id=identifier,
+                    title=title,
+                    description=description,
+                    venue=venue,
+                    capacity=capacity,
+                    starts_at=starts,
+                    ends_at=starts + timedelta(hours=3),
+                    registration_deadline=starts - timedelta(hours=1),
+                    classification=classification,
+                    department_rules=departments,
+                    program_rules=programs,
+                    batch_rules=[],
+                    organizer_id="00000000-0000-0000-0000-000000000000",
+                    organizer_name="Campus Collective · Pilot",
+                    is_synthetic=True,
+                )
+            )
+
+            # Track how many new event records are added.
             created += 1
+
+        # Save all newly added events to the database.
         db.commit()
+
+    # Print the number of events created during this run.
     print(f"Created {created} synthetic events")
 
 
+# Run the seeding process only when this file is executed directly.
 if __name__ == "__main__":
     main()
