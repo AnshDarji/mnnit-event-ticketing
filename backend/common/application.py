@@ -8,6 +8,9 @@ from sqlalchemy import text
 from .config import settings
 from .db import get_engine
 
+# # Creates a FastAPI application with configurable database connectivity and startup validation.
+# Restricts public API access in production using a gateway secret, while allowing health checks and internal routes.
+# Provides a health endpoint to verify that the service and database are running.
 
 def application(title: str, database: bool = True):
     @asynccontextmanager

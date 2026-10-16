@@ -11,6 +11,7 @@ SERVICES = ("auth", "events", "ticketing")
 ROOT = Path(__file__).resolve().parents[1]
 
 
+
 def migrate(service: str):
     engine = get_engine()
     if engine.dialect.name == "sqlite":
@@ -32,6 +33,8 @@ def migrate(service: str):
                     connection.exec_driver_sql(statement)
             connection.execute(text(f'INSERT INTO "{service}"._migrations (version) VALUES (:version)'), {"version": file.name})
             print(f"Applied {service}/{file.name}")
+
+
 
 
 def main():

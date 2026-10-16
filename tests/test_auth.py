@@ -10,6 +10,7 @@ def identity(**changes):
     return {"sub": "google-subject", "email": "student@mnnit.ac.in", "email_verified": True, "hd": "mnnit.ac.in", "name": "Campus Student", **changes}
 
 
+
 def test_mnnit_google_identity_can_sign_in_and_returns_same_user(api, monkeypatch):
     monkeypatch.setattr(auth, "verify_google_credential", lambda credential: identity())
     first = api.auth.post("/auth/google", json={"credential": "signed-token"})
@@ -21,6 +22,7 @@ def test_mnnit_google_identity_can_sign_in_and_returns_same_user(api, monkeypatc
     assert me.json()["email"] == "student@mnnit.ac.in"
 
 
+
 @pytest.mark.parametrize("changes", [{"hd": "gmail.com"}, {"hd": None}, {"email": "student@gmail.com"}, {"email_verified": False}, {"email_verified": "true"}])
 def test_google_sign_in_requires_workspace_domain_and_verified_institute_email(api, monkeypatch, changes):
     monkeypatch.setattr(auth, "verify_google_credential", lambda credential: identity(**changes))
@@ -28,9 +30,11 @@ def test_google_sign_in_requires_workspace_domain_and_verified_institute_email(a
     assert response.status_code == 403
 
 
+
 def test_missing_google_subject_is_rejected(api, monkeypatch):
     monkeypatch.setattr(auth, "verify_google_credential", lambda credential: identity(sub=""))
     assert api.auth.post("/auth/google", json={"credential": "signed-token"}).status_code == 401
+
 
 
 def test_google_verifier_passes_expected_client_id_to_google_library(api, monkeypatch):
@@ -43,12 +47,14 @@ def test_google_verifier_passes_expected_client_id_to_google_library(api, monkey
     assert called == {"credential": "actual-id-token", "audience": settings.google_client_id}
 
 
+
 def test_google_verification_failure_returns_401(api, monkeypatch):
     def fail(*args, **kwargs):
         raise ValueError("bad signature")
     monkeypatch.setattr(auth.id_token, "verify_oauth2_token", fail)
     monkeypatch.setattr(auth, "verify_google_credential", REAL_GOOGLE_VERIFIER)
     assert api.auth.post("/auth/google", json={"credential": "forged-token"}).status_code == 401
+
 
 
 def test_profile_normalizes_rules_and_issues_role_token(api, actor):
@@ -60,11 +66,13 @@ def test_profile_normalizes_rules_and_issues_role_token(api, actor):
     assert response.json()["access_token"] != student.token
 
 
+
 def test_role_selection_can_be_disabled(api, actor, monkeypatch):
     student = actor()
     monkeypatch.setattr(settings, "pilot_role_selection", False)
     response = api.auth.put("/auth/me", json={"role": "admin"}, headers=student.headers)
     assert response.status_code == 403
+
 
 
 def test_invalid_role_and_batch_are_rejected(api, actor):

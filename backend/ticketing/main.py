@@ -18,6 +18,10 @@ from backend.common.db import get_session
 from backend.common.models import Booking, Inventory, uid, utcnow
 from backend.common.security import current_claims, require_roles, sign_ticket, verify_ticket
 
+## Implements the ticketing service for booking, viewing, cancelling, and checking in event tickets.
+# Generates secure QR-code tickets, enforces event eligibility and capacity limits, and prevents duplicate bookings or check-ins.
+# Provides registration and attendance statistics while maintaining ticket and inventory consistency in the database.
+
 app = application("MNNIT Ticketing Service")
 
 

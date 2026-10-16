@@ -86,6 +86,8 @@ def google_login(body: GoogleLogin, db: Session = Depends(get_session)):
     return session_response(user)
 
 
+
+
 @app.post("/auth/demo")
 def demo_login(body: DemoLogin, db: Session = Depends(get_session)):
     if not settings.demo_auth_enabled or settings.environment == "production":
@@ -101,6 +103,7 @@ def demo_login(body: DemoLogin, db: Session = Depends(get_session)):
     return session_response(user)
 
 
+
 def lookup_user(db, user_id):
     user = db.get(User, user_id)
     if user is None:
@@ -108,9 +111,12 @@ def lookup_user(db, user_id):
     return user
 
 
+
 @app.get("/auth/me")
 def me(claims: dict = Depends(current_claims), db: Session = Depends(get_session)):
     return user_dict(lookup_user(db, claims["sub"]))
+
+
 
 
 @app.put("/auth/me")
@@ -123,6 +129,7 @@ def update_me(body: ProfileUpdate, claims: dict = Depends(current_claims), db: S
     db.commit()
     db.refresh(user)
     return session_response(user)
+
 
 
 @app.get("/internal/users/{user_id}", dependencies=[Depends(internal_access)])
