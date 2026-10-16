@@ -12,16 +12,22 @@ const roles: Role[] = ["attendee", "organizer", "gate_staff", "admin"];
 export function ProfileForm({ user, onSave }: { user: User; onSave: (session: Session) => void }) {
   const [role, setRole] = useState(user.role);
   const [department, setDepartment] = useState(user.department || "");
+
+  
   const [program, setProgram] = useState(user.program || "");
   const [batch, setBatch] = useState(user.batch || "");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError("");
     try {
+
+
       onSave(await api<Session>("/auth/me", { method: "PUT", body: JSON.stringify({ role, department: department.trim().toUpperCase(), program: program.trim().toUpperCase(), batch: batch.trim() }) }));
     } catch (error) { setError(error instanceof Error ? error.message : "Profile couldn't be saved."); }
     finally { setBusy(false); }
+
   }
   return <form className="form-stack" onSubmit={submit}><div className="identity-card"><div className="avatar">{user.name.slice(0, 1)}</div><div><strong>{user.name}</strong><span>{user.email}</span></div></div><div className="inline-note"><ShieldCheck size={18} /><span>Roles are self-selected in this coursework pilot. Choose a role to try its workflow.</span></div><label className="field">Your role<select value={role} onChange={event => setRole(event.target.value as Role)}>{roles.map(role => <option key={role} value={role}>{roleLabel(role)}</option>)}</select></label><div><h3 className="form-subtitle">Academic profile</h3><p className="muted text-small">These details determine eligibility for restricted events. Use the exact values shown in an event’s requirements.</p></div><div className="form-row"><label className="field">Department<input value={department} onChange={event => setDepartment(event.target.value)} placeholder="e.g. CSED" maxLength={40} /></label><label className="field">Program<input value={program} onChange={event => setProgram(event.target.value)} placeholder="e.g. B.TECH" maxLength={40} /></label></div><label className="field">Admission batch<input value={batch} onChange={event => setBatch(event.target.value)} placeholder="e.g. 2024" pattern="20[0-9]{2}" inputMode="numeric" maxLength={4} /></label>{error && <p className="form-error" role="alert">{error}</p>}<button type="submit" className="button button-primary button-full" disabled={busy}>{busy ? <LoadingIndicator compact /> : <ArrowRight size={18} />}{busy ? "Saving…" : "Save profile"}</button></form>;
 }
