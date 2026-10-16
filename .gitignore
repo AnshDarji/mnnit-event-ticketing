@@ -23,3 +23,19 @@ work/
 .DS_Store
 Thumbs.db
 *.log
+
+# IDE & Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python type-check & linter caches
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# Playwright & E2E caches
+playwright/.cache/
